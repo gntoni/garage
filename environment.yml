@@ -45,6 +45,7 @@ dependencies:
         - jsonmerge
         - protobuf
         - memory_profiler
+        - sh
         # dev dependencies below this line
         - nose2
         - flake8
