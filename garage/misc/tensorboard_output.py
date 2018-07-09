@@ -13,7 +13,6 @@ from tensorboard.plugins.custom_scalar import metadata
 import tensorflow as tf
 
 from garage.misc.console import mkdir_p
-from garage.tf.misc.tensor_utils import enclosing_scope
 
 
 class TensorBoardOutput:
@@ -69,7 +68,7 @@ class TensorBoardOutput:
 
     def record_histogram(self, key, val):
         if str(key) not in self._histogram_ds:
-            with enclosing_scope(self._name, "record_hist"):
+            with name_scope(self._name, "record_hist"):
                 self._histogram_ds[str(key)] = tf.Variable(val)
             self._histogram_summary_op.append(
                 tf.summary.histogram(str(key), self._histogram_ds[str(key)]))
@@ -129,7 +128,7 @@ class TensorBoardOutput:
                 tag=key + '/' + str(idx).strip('()'), simple_value=float(v))
 
     def _get_histogram_var_by_type(self, histogram_type, shape, **kwargs):
-        with enclosing_scope(self._name, "get_hist_{}".format(histogram_type)):
+        with name_scope(self._name, "get_hist_{}".format(histogram_type)):
             if histogram_type == "normal":
                 # Make a normal distribution, with a shifting mean
                 mean = tf.Variable(kwargs['mean'])

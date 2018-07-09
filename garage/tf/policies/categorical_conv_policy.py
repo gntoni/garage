@@ -7,7 +7,6 @@ from garage.tf.core import LayersPowered
 import garage.tf.core.layers as L
 from garage.tf.distributions import Categorical
 from garage.tf.misc import tensor_utils
-from garage.tf.misc.tensor_utils import enclosing_scope
 from garage.tf.policies import StochasticPolicy
 from garage.tf.spaces import Discrete
 
@@ -76,7 +75,7 @@ class CategoricalConvPolicy(StochasticPolicy, LayersPowered, Serializable):
                       obs_var,
                       state_info_vars=None,
                       name="dist_info_sym"):
-        with enclosing_scope(self._name, name):
+        with tf.name_scope(name):
             return dict(
                 prob=L.get_output(self._l_prob,
                                   {self._l_obs: tf.cast(obs_var, tf.float32)}))

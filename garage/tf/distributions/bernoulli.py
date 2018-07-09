@@ -2,7 +2,6 @@ import numpy as np
 import tensorflow as tf
 
 from garage.tf.distributions import Distribution
-from garage.tf.misc.tensor_utils import enclosing_scope
 
 TINY = 1e-8
 
@@ -17,7 +16,7 @@ class Bernoulli(Distribution):
         return self._dim
 
     def kl_sym(self, old_dist_info_vars, new_dist_info_vars, name="kl_sym"):
-        with enclosing_scope(self._name, name):
+        with tf.name_scope(name):
             old_p = old_dist_info_vars["p"]
             new_p = new_dist_info_vars["p"]
             kl = old_p * (tf.log(old_p + TINY) - tf.log(new_p + TINY)) \
@@ -43,7 +42,7 @@ class Bernoulli(Distribution):
                              old_dist_info_vars,
                              new_dist_info_vars,
                              name="likelihood_ratio_sym"):
-        with enclosing_scope(self._name, name):
+        with tf.name_scope(name):
             old_p = old_dist_info_vars["p"]
             new_p = new_dist_info_vars["p"]
             ndims = old_p.get_shape().ndims
@@ -56,7 +55,7 @@ class Bernoulli(Distribution):
                            x_var,
                            dist_info_vars,
                            name="log_likelihood_sym"):
-        with enclosing_scope(self._name, name):
+        with tf.name_scope(name):
             p = dist_info_vars["p"]
             ndims = p.get_shape().ndims
             return tf.reduce_sum(

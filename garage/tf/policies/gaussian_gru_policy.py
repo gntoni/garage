@@ -9,7 +9,6 @@ from garage.tf.core import LayersPowered
 import garage.tf.core.layers as L
 from garage.tf.distributions import RecurrentDiagonalGaussian
 from garage.tf.misc import tensor_utils
-from garage.tf.misc.tensor_utils import enclosing_scope
 from garage.tf.policies import StochasticPolicy
 
 
@@ -174,7 +173,7 @@ class GaussianGRUPolicy(StochasticPolicy, LayersPowered, Serializable):
 
     @overrides
     def dist_info_sym(self, obs_var, state_info_vars, name="dist_info_sym"):
-        with enclosing_scope(self.name, name):
+        with tf.name_scope(name):
             n_batches = tf.shape(obs_var)[0]
             n_steps = tf.shape(obs_var)[1]
             obs_var = tf.reshape(obs_var, tf.stack([n_batches, n_steps, -1]))

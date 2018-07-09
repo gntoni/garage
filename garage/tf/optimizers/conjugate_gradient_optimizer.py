@@ -9,7 +9,6 @@ from garage.misc import krylov
 from garage.misc import logger
 from garage.misc.ext import sliced_fun
 from garage.tf.misc import tensor_utils
-from garage.tf.misc.tensor_utils import enclosing_scope
 
 
 class PerlmutterHvp(object):
@@ -20,8 +19,8 @@ class PerlmutterHvp(object):
         self._num_slices = num_slices
         self._name = name
 
-    def update_opt(self, f, target, inputs, reg_coeff, name="update_opt"):
-        with enclosing_scope(self._name, name):
+    def update_opt(self, f, target, inputs, reg_coeff, name="update_opt_perlmutter"):
+        with tf.name_scope(name):
             self.target = target
             self.reg_coeff = reg_coeff
             params = target.get_params(trainable=True)
@@ -37,23 +36,22 @@ class PerlmutterHvp(object):
                 for p in params
             ])
 
-            def Hx_plain(original_scope_name=tf.get_variable_scope().name):
-                with tf.variable_scope(original_scope_name):
-                    with enclosing_scope(name, "Hx_plain"):
-                        Hx_plain_splits = tf.gradients(
-                            tf.reduce_sum(
-                                tf.stack([
-                                    tf.reduce_sum(g * x)
-                                    for g, x in zip(constraint_grads, xs)
-                                ])),
-                            params,
-                            name="Hx_plain_gradients")
-                        for idx, (Hx, param) in enumerate(
-                                zip(Hx_plain_splits, params)):
-                            if Hx is None:
-                                Hx_plain_splits[idx] = tf.zeros_like(param)
-                        return tensor_utils.flatten_tensor_variables(
-                            Hx_plain_splits)
+            def Hx_plain():
+                with tf.name_scope("Hx_plain"):
+                    Hx_plain_splits = tf.gradients(
+                        tf.reduce_sum(
+                            tf.stack([
+                                tf.reduce_sum(g * x)
+                                for g, x in zip(constraint_grads, xs)
+                            ])),
+                        params,
+                        name="Hx_plain_gradients")
+                    for idx, (Hx, param) in enumerate(
+                            zip(Hx_plain_splits, params)):
+                        if Hx is None:
+                            Hx_plain_splits[idx] = tf.zeros_like(param)
+                    return tensor_utils.flatten_tensor_variables(
+                        Hx_plain_splits)
 
             self.opt_fun = ext.lazydict(
                 f_Hx_plain=lambda: tensor_utils.compile_function(
@@ -86,7 +84,7 @@ class FiniteDifferenceHvp(object):
         self._name = name
 
     def update_opt(self, f, target, inputs, reg_coeff, name="update_opt"):
-        with enclosing_scope(self._name, name):
+        with tf.name_scope(name):
             self.target = target
             self.reg_coeff = reg_coeff
 
@@ -200,7 +198,7 @@ class ConjugateGradientOptimizer(Serializable):
                    leq_constraint,
                    inputs,
                    extra_inputs=None,
-                   name="update_opt",
+                   name="update_opt_conjugate",
                    constraint_name="constraint",
                    *args,
                    **kwargs):
@@ -218,7 +216,7 @@ class ConjugateGradientOptimizer(Serializable):
          should not be subsampled
         :return: No return value.
         """
-        with enclosing_scope(self._name, name):
+        with tf.name_scope(name):
             inputs = tuple(inputs)
             if extra_inputs is None:
                 extra_inputs = tuple()

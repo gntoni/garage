@@ -14,7 +14,6 @@ from garage.tf.core import layers as layers
 from garage.tf.core import LayersPowered
 from garage.tf.core.layers import batch_norm
 from garage.tf.misc import tensor_utils
-from garage.tf.misc.tensor_utils import enclosing_scope
 from garage.tf.policies import Policy
 
 
@@ -109,7 +108,7 @@ class ContinuousMLPPolicy(Policy, Serializable, LayersPowered):
 
     def get_action_sym(self, obs_var, name="get_action_sym", **kwargs):
         """Return action sym according to obs_var."""
-        with enclosing_scope(self.name, name):
+        with tf.name_scope(name):
             actions = layers.get_output(self._output_layer,
                                         {self._obs_layer: obs_var}, **kwargs)
         return tf.multiply(actions, self._action_bound)

@@ -30,6 +30,7 @@ class MLP(LayersPowered, Serializable):
 
         Serializable.quick_init(self, locals())
 
+        self._name_scope = tf.name_scope(name)
         with tf.variable_scope(name):
             if input_layer is None:
                 l_in = L.InputLayer(
@@ -68,9 +69,11 @@ class MLP(LayersPowered, Serializable):
             self._l_in = l_in
             self._l_out = l_out
             # self._input_var = l_in.input_var
+
+        with self._name_scope:
             self._output = L.get_output(l_out)
 
-            LayersPowered.__init__(self, l_out)
+        LayersPowered.__init__(self, l_out)
 
     @property
     def input_layer(self):

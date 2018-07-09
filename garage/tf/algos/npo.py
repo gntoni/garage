@@ -5,7 +5,6 @@ import garage.misc.logger as logger
 from garage.misc.overrides import overrides
 from garage.tf.algos import BatchPolopt
 from garage.tf.misc import tensor_utils
-from garage.tf.misc.tensor_utils import enclosing_scope
 from garage.tf.optimizers import PenaltyLbfgsOptimizer
 
 
@@ -27,11 +26,14 @@ class NPO(BatchPolopt):
         self.optimizer = optimizer
         self.step_size = step_size
         self.name = name
-        super(NPO, self).__init__(**kwargs)
+        self.variable_scope = tf.variable_scope(name)
+        self.name_scope =  tf.name_scope(name)
+        with self.variable_scope:
+            super(NPO, self).__init__(**kwargs)
 
     @overrides
     def init_opt(self):
-        with enclosing_scope(self.name, "init_opt"):
+        with tf.name_scope("init_opt"):
             is_recurrent = int(self.policy.recurrent)
             obs_var = self.env.observation_space.new_tensor_variable(
                 'obs',

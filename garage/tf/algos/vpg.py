@@ -5,7 +5,6 @@ from garage.misc import ext, logger
 from garage.misc.overrides import overrides
 from garage.tf.algos import BatchPolopt
 from garage.tf.misc import tensor_utils
-from garage.tf.misc.tensor_utils import enclosing_scope
 from garage.tf.optimizers import FirstOrderOptimizer
 
 
@@ -41,7 +40,7 @@ class VPG(BatchPolopt, Serializable):
 
     @overrides
     def init_opt(self):
-        with enclosing_scope(self.name, "init_opt"):
+        with tf.name_scope("init_opt"):
             is_recurrent = int(self.policy.recurrent)
 
             obs_var = self.env.observation_space.new_tensor_variable(

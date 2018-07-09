@@ -373,12 +373,16 @@ class ParamLayer(Layer):
         return input_shape[:-1] + (self.num_units, )
 
     def get_output_for(self, input, **kwargs):
-        ndim = input.get_shape().ndims
-        reshaped_param = tf.reshape(self.param,
-                                    (1, ) * (ndim - 1) + (self.num_units, ))
-        tile_arg = tf.concat(axis=0, values=[tf.shape(input)[:ndim - 1], [1]])
-        tiled = tf.tile(reshaped_param, tile_arg)
-        return tiled
+        name = "%s_%s" % (self.name, "op")
+        with tf.name_scope(name):
+            ndim = input.get_shape().ndims
+            reshaped_param = tf.reshape(self.param,
+                                        (1, ) * (ndim - 1)
+                                        + (self.num_units, ))
+            tile_arg = tf.concat(axis=0,
+                                 values=[tf.shape(input)[:ndim - 1], [1]])
+            tiled = tf.tile(reshaped_param, tile_arg)
+            return tiled
 
 
 class OpLayer(MergeLayer):
@@ -432,14 +436,16 @@ class DenseLayer(Layer):
         return (input_shape[0], self.num_units)
 
     def get_output_for(self, input, **kwargs):
-        if input.get_shape().ndims > 2:
-            # if the input has more than two dimensions, flatten it into a
-            # batch of feature vectors.
-            input = tf.reshape(input, tf.stack([tf.shape(input)[0], -1]))
-        activation = tf.matmul(input, self.W)
-        if self.b is not None:
-            activation = activation + tf.expand_dims(self.b, 0)
-        return self.nonlinearity(activation)
+        name = "%s_%s" % (self.name, "op")
+        with tf.name_scope(name):
+            if input.get_shape().ndims > 2:
+                # if the input has more than two dimensions, flatten it into a
+                # batch of feature vectors.
+                input = tf.reshape(input, tf.stack([tf.shape(input)[0], -1]))
+            activation = tf.matmul(input, self.W)
+            if self.b is not None:
+                activation = activation + tf.expand_dims(self.b, 0)
+            return self.nonlinearity(activation)
 
 
 class BaseConvLayer(Layer):
