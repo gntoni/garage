@@ -70,10 +70,7 @@ class MLP(LayersPowered, Serializable):
             self._l_out = l_out
             # self._input_var = l_in.input_var
 
-        with self._name_scope:
-            self._output = L.get_output(l_out)
-
-        LayersPowered.__init__(self, l_out)
+            LayersPowered.__init__(self, l_out)
 
     @property
     def input_layer(self):
@@ -90,10 +87,6 @@ class MLP(LayersPowered, Serializable):
     @property
     def layers(self):
         return self._layers
-
-    @property
-    def output(self):
-        return self._output
 
 
 class ConvNetwork(LayersPowered, Serializable):

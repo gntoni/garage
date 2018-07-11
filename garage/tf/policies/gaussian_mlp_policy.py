@@ -58,8 +58,8 @@ class GaussianMLPPolicy(StochasticPolicy, LayersPowered, Serializable):
         assert isinstance(env_spec.action_space, Box)
         self.name = name
         self._name_scope = tf.name_scope(name)
-        self._mean_network_scope = tf.name_scope("mean_network")
-        self._std_network_scope = tf.name_scope("std_network")
+        self._mean_network_name = "mean_network"
+        self._std_network_name = "std_network"
 
         with tf.variable_scope(name):
 
@@ -76,23 +76,24 @@ class GaussianMLPPolicy(StochasticPolicy, LayersPowered, Serializable):
                     else:
                         raise NotImplementedError
                     init_b = tf.constant_initializer(init_std_param)
-                    mean_network = MLP(
-                        name=self._mean_network_scope.name,
-                        input_shape=(obs_dim, ),
-                        output_dim=2 * action_dim,
-                        hidden_sizes=hidden_sizes,
-                        hidden_nonlinearity=hidden_nonlinearity,
-                        output_nonlinearity=output_nonlinearity,
-                        output_b_init=init_b,
-                    )
-                    l_mean = L.SliceLayer(
-                        mean_network.output_layer,
-                        slice(action_dim),
-                        name="mean_slice",
-                    )
+                    with tf.variable_scope(self._mean_network_name):
+                        mean_network = MLP(
+                            name="mlp",
+                            input_shape=(obs_dim, ),
+                            output_dim=2 * action_dim,
+                            hidden_sizes=hidden_sizes,
+                            hidden_nonlinearity=hidden_nonlinearity,
+                            output_nonlinearity=output_nonlinearity,
+                            output_b_init=init_b,
+                        )
+                        l_mean = L.SliceLayer(
+                            mean_network.output_layer,
+                            slice(action_dim),
+                            name="mean_slice",
+                        )
                 else:
                     mean_network = MLP(
-                        name=self._mean_network_scope.name,
+                        name=self._mean_network_name,
                         input_shape=(obs_dim, ),
                         output_dim=action_dim,
                         hidden_sizes=hidden_sizes,
@@ -109,7 +110,7 @@ class GaussianMLPPolicy(StochasticPolicy, LayersPowered, Serializable):
             else:
                 if adaptive_std:
                     std_network = MLP(
-                        name=self._std_network_scope.name,
+                        name=self._std_network_name,
                         input_shape=(obs_dim, ),
                         input_layer=mean_network.input_layer,
                         output_dim=action_dim,
@@ -119,11 +120,12 @@ class GaussianMLPPolicy(StochasticPolicy, LayersPowered, Serializable):
                     )
                     l_std_param = std_network.output_layer
                 elif std_share_network:
-                    l_std_param = L.SliceLayer(
-                        mean_network.output_layer,
-                        slice(action_dim, 2 * action_dim),
-                        name="std_slice",
-                    )
+                    with tf.variable_scope(self._std_network_name):
+                        l_std_param = L.SliceLayer(
+                            mean_network.output_layer,
+                            slice(action_dim, 2 * action_dim),
+                            name="std_slice",
+                        )
                 else:
                     if std_parametrization == 'exp':
                         init_std_param = np.log(init_std)
@@ -131,13 +133,14 @@ class GaussianMLPPolicy(StochasticPolicy, LayersPowered, Serializable):
                         init_std_param = np.log(np.exp(init_std) - 1)
                     else:
                         raise NotImplementedError
-                    l_std_param = L.ParamLayer(
-                        mean_network.input_layer,
-                        num_units=action_dim,
-                        param=tf.constant_initializer(init_std_param),
-                        name="output_std_param",
-                        trainable=learn_std,
-                    )
+                    with tf.variable_scope(self._std_network_name):
+                        l_std_param = L.ParamLayer(
+                            mean_network.input_layer,
+                            num_units=action_dim,
+                            param=tf.constant_initializer(init_std_param),
+                            name="output_std_param",
+                            trainable=learn_std,
+                        )
 
             self.std_parametrization = std_parametrization
 
@@ -167,8 +170,9 @@ class GaussianMLPPolicy(StochasticPolicy, LayersPowered, Serializable):
 
             dist_info_sym = self.dist_info_sym(
                 mean_network.input_layer.input_var, dict())
-            mean_var = dist_info_sym["mean"]
-            log_std_var = dist_info_sym["log_std"]
+            mean_var = tf.identity(dist_info_sym["mean"], name="mean")
+            log_std_var = tf.identity(dist_info_sym["log_std"],
+                                      name="standard_dev")
 
             self._f_dist = tensor_utils.compile_function(
                 inputs=[obs_var],
@@ -183,10 +187,10 @@ class GaussianMLPPolicy(StochasticPolicy, LayersPowered, Serializable):
                       obs_var,
                       state_info_vars=None,
                       name="dist_info_sym"):
-        with tf.name_scope(name):
-            with tf.name_scope(self._mean_network_scope.name):
+        with tf.name_scope(name, "dist_info_sym", [obs_var]):
+            with tf.name_scope(self._mean_network_name, values=[obs_var]):
                 mean_var = L.get_output(self._l_mean, obs_var)
-            with tf.name_scope(self._std_network_scope.name):
+            with tf.name_scope(self._std_network_name, values=[obs_var]):
                 std_param_var = L.get_output(self._l_std_param, obs_var)
             if self.min_std_param is not None:
                 std_param_var = tf.maximum(std_param_var, self.min_std_param)
