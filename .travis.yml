@@ -3,6 +3,9 @@ language: python
 python:
   - "3.5.2"
 
+git:
+  depth: false
+
 cache:
   timeout: 1000
   directories:
@@ -19,12 +22,18 @@ before_cache:
  - rm -rf "${HOME}/.mujoco/mjkey.txt"
 
 before_install:
-  # paths
-  - export LD_LIBRARY_PATH="${HOME}/.mujoco/mjpro150/bin:${LD_LIBRARY_PATH}"
+  # system search paths
   - export PATH="${HOME}/miniconda/bin:${PATH}"
+  - export LD_LIBRARY_PATH="${HOME}/.mujoco/mjpro150/bin:${LD_LIBRARY_PATH}"
+  - export MJLIB_PATH="${HOME}/.mujoco/mjpro150/bin/libmujoco150.so"
+  - export MJKEY_PATH="${HOME}/.mujoco/mjkey.txt"
 
   # get mujoco key
-  - echo "${MJKEY}" > "${HOME}/.mujoco/mjkey.txt"
+  - echo "$MJKEY" > "${HOME}/.mujoco/mjkey.txt"
+
+  # update apt
+  - sudo add-apt-repository --yes ppa:flixr/backports # for patchelf
+  - sudo apt-get update
 
   # install MuJoCo if necessary
   - if [[ ! -d "${HOME}/.mujoco/mjpro150" ]]; then
@@ -52,10 +61,16 @@ before_install:
   - conda info -a
 
 install:
+  # dummy X server
+  - sudo apt-get install -y --allow-unauthenticated xpra xserver-xorg-video-dummy freeglut3-dev mesa-utils
+
   # mujoco deps
-  - sudo add-apt-repository --yes ppa:flixr/backports # for patchelf
-  - sudo apt-get update
-  - sudo apt-get install -y libglfw2 libglew-dev libosmesa6-dev patchelf libopenmpi-dev openmpi-bin
+  - sudo apt-get install libglfw3 libglew2.0
+  - sudo apt-get install -y --allow-unauthenticated libglfw2 libglew-dev libosmesa6-dev patchelf libopenmpi-dev openmpi-bin
+
+  # for dm_control (because 14.04 uses an ancient glibc)
+  # see https://github.com/deepmind/dm_control/issues/2
+  - sudo apt-get install -y --allow-unauthenticated libxml2 libxslt1.1
 
   # Create conda env if it does not exist; update it if environment.yml was touched
   - if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]; then
@@ -74,23 +89,46 @@ install:
     fi;
   - source activate garage
 
+  - cp $HOME/miniconda/envs/garage/lib/python3.5/site-packages/dm_control/mujoco/wrapper/util.py .
+  # - export LD_PRELOAD=$(ldd $(which glxinfo) | grep libGL.so | awk '{print $3}')
+  # - echo $LD_PRELOAD
+  # - export LD_PRELOAD="${LD_PRELOAD}:libstdc++.so.6:libxslt.so.1:libexslt.so.0:libxml2.so.2"
+  # - LD_PRELOAD=libstdc++.so.6:libxslt.so.1:libexslt.so.0:libxml2.so.2 python -c "import util; print(util.get_mjlib())"
+
+  # - export LD_PRELOAD=$(ldd $(which glxinfo) | grep libGL.so)
+  # - export LD_PRELOAD=${LD_PRELOAD}:libstdc++.so.6:libxslt.so.1:libexslt.so.0:libxml2.so.2 python -c "import util; print(util.get_mjlib())"
+
   # install tensorflow
   # it's not included in environment.yml because of CPU vs GPU
   - pip install tensorflow==1.8
 
-  # prevent garage from exiting on config
-  - cp garage/config.py garage/config_personal.py
-
   # trigger compilation of mujoco_py bindings
   - python -c "import mujoco_py"
 
-git:
-  depth: false
+before_script:
+  # Add garage to PYTHONPATH
+  - export PYTHONPATH="${TRAVIS_BUILD_DIR}"
+
+  # Setup dummy display
+  - export DISPLAY=:99
+  - "xpra --xvfb=\"Xorg +extension GLX -config scripts/travisci/dummy.xorg.conf -logfile ${HOME}/.xpra/xorg.log\"  start \"${DISPLAY}\""
+
+  # prevent garage from exiting on config
+  - cp garage/config.py garage/config_personal.py
+
+  # Silence annoying logs
+  - export DISABLE_MUJOCO_RENDERING=1
+  - export TF_CPP_MIN_LOG_LEVEL=3
 
 script:
   - scripts/travisci/check_flake8.sh
   - scripts/travisci/check_imports.sh
   - scripts/travisci/check_precommit.sh
+  - nose2 -c setup.cfg -E 'not broken and not huge'
+
+after_script:
+  - xpra stop "${DISPLAY}"
+  - cat ~/.xpra/*
 
 notifications:
   email: false
