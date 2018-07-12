@@ -26,8 +26,7 @@ class NPO(BatchPolopt):
         self.optimizer = optimizer
         self.step_size = step_size
         self.name = name
-        self.name_scope =  tf.name_scope(name)
-        with self.name_scope:
+        with tf.name_scope(name):
             super(NPO, self).__init__(**kwargs)
 
     @overrides
@@ -77,14 +76,13 @@ class NPO(BatchPolopt):
             else:
                 valid_var = None
 
-        dist_info_vars = self.policy.dist_info_sym(obs_var,
-                                                   state_info_vars)
+        dist_info_vars = self.policy.dist_info_sym(obs_var, state_info_vars)
         kl = dist.kl_sym(old_dist_info_vars, dist_info_vars)
         lr = dist.likelihood_ratio_sym(action_var, old_dist_info_vars,
                                        dist_info_vars)
         mean_kl_scope = tf.name_scope("mean_kl", values=[kl, valid_var])
-        surr_loss_scope = tf.name_scope("surr_loss",
-                                        values=[lr, advantage_var, valid_var])
+        surr_loss_scope = tf.name_scope(
+            "surr_loss", values=[lr, advantage_var, valid_var])
         if is_recurrent:
             with mean_kl_scope:
                 mean_kl = tf.reduce_sum(

@@ -16,7 +16,7 @@ from garage.tf.spaces import Box
 class GaussianMLPPolicy(StochasticPolicy, LayersPowered, Serializable):
     def __init__(self,
                  env_spec,
-                 name="GaussianMLPPolicy",
+                 name=None,
                  hidden_sizes=(32, 32),
                  learn_std=True,
                  init_std=1.0,
@@ -57,11 +57,10 @@ class GaussianMLPPolicy(StochasticPolicy, LayersPowered, Serializable):
         Serializable.quick_init(self, locals())
         assert isinstance(env_spec.action_space, Box)
         self.name = name
-        self._name_scope = tf.name_scope(name)
         self._mean_network_name = "mean_network"
         self._std_network_name = "std_network"
 
-        with tf.variable_scope(name):
+        with tf.variable_scope(name, "GaussianMLPPolicy"):
 
             obs_dim = env_spec.observation_space.flat_dim
             action_dim = env_spec.action_space.flat_dim
@@ -171,8 +170,8 @@ class GaussianMLPPolicy(StochasticPolicy, LayersPowered, Serializable):
             dist_info_sym = self.dist_info_sym(
                 mean_network.input_layer.input_var, dict())
             mean_var = tf.identity(dist_info_sym["mean"], name="mean")
-            log_std_var = tf.identity(dist_info_sym["log_std"],
-                                      name="standard_dev")
+            log_std_var = tf.identity(
+                dist_info_sym["log_std"], name="standard_dev")
 
             self._f_dist = tensor_utils.compile_function(
                 inputs=[obs_var],
@@ -183,11 +182,8 @@ class GaussianMLPPolicy(StochasticPolicy, LayersPowered, Serializable):
     def vectorized(self):
         return True
 
-    def dist_info_sym(self,
-                      obs_var,
-                      state_info_vars=None,
-                      name="dist_info_sym"):
-        with tf.name_scope(name, "dist_info_sym", [obs_var]):
+    def dist_info_sym(self, obs_var, state_info_vars=None, name=None):
+        with tf.name_scope(name, "dist_info", [obs_var]):
             with tf.name_scope(self._mean_network_name, values=[obs_var]):
                 mean_var = L.get_output(self._l_mean, obs_var)
             with tf.name_scope(self._std_network_name, values=[obs_var]):
@@ -221,7 +217,7 @@ class GaussianMLPPolicy(StochasticPolicy, LayersPowered, Serializable):
                                obs_var,
                                action_var,
                                old_dist_info_vars,
-                               name="get_reparam_action_sym"):
+                               name=None):
         """
         Given observations, old actions, and distribution of old actions,
         return a symbolically reparameterized representation of the actions in
@@ -231,7 +227,8 @@ class GaussianMLPPolicy(StochasticPolicy, LayersPowered, Serializable):
         :param old_dist_info_vars:
         :return:
         """
-        with tf.name_scope(name):
+        with tf.name_scope(name, "get_reparam_action",
+                           [obs_var, action_var, old_dist_info_vars]):
             new_dist_info_vars = self.dist_info_sym(obs_var, action_var)
             new_mean_var, new_log_std_var = new_dist_info_vars[
                 "mean"], new_dist_info_vars["log_std"]
