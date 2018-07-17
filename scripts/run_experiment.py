@@ -5,6 +5,7 @@ import datetime
 import os
 import os.path as osp
 import pickle as pickle
+import signal
 import sys
 sys.path.append(".")
 import uuid
@@ -117,11 +118,13 @@ def run_experiment(argv):
     if args.seed is not None:
         set_seed(args.seed)
 
+    signal.pthread_sigmask(signal.SIG_BLOCK, [signal.SIGINT])
     if args.n_parallel > 0:
         from garage.sampler import parallel_sampler
         parallel_sampler.initialize(n_parallel=args.n_parallel)
         if args.seed is not None:
             parallel_sampler.set_seed(args.seed)
+    signal.pthread_sigmask(signal.SIG_UNBLOCK, [signal.SIGINT])
 
     if not args.plot:
         garage.plotter.Plotter.disable()
