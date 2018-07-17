@@ -102,6 +102,3 @@ class TestAlgos(unittest.TestCase):
             **(algo_args.get(algo_cls, dict())))
         algo.train()
         assert not np.any(np.isnan(policy.get_param_values()))
-
-    # https://github.com/rlworkgroup/garage/issues/184
-    test_polopt_algo.broken = True

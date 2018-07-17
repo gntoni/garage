@@ -53,7 +53,6 @@ class TestTRPO(unittest.TestCase):
         algo.train()
         assert not np.isnan(np.sum(policy.get_param_values()))
 
-    # https://github.com/rlworkgroup/garage/issues/186
     test_trpo_relu_nan.broken = True
 
     def test_trpo_deterministic_nan(self):
@@ -71,3 +70,5 @@ class TestTRPO(unittest.TestCase):
             step_size=0.01)
         algo.train()
         assert not np.isnan(np.sum(policy.get_param_values()))
+
+    test_trpo_deterministic_nan.broken = True

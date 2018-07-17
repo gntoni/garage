@@ -18,6 +18,3 @@ class TestNetworks(unittest.TestCase):
             inputs=[network.input_layer.input_var],
             outputs=L.get_output(network.output_layer))
         assert f_output(np.zeros((6, 8, 2, 3))).shape == (6, 8, 5)
-
-    # https://github.com/rlworkgroup/garage/issues/182
-    test_gru_network.broken = True

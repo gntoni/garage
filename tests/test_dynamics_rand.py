@@ -7,7 +7,6 @@ from garage.envs.mujoco.randomization import randomize
 from garage.envs.mujoco.randomization import Variations
 
 
-# Slow test!
 class TestDynamicsRand(unittest.TestCase):
     def test_dynamics_rand(self):
         variations = Variations()

@@ -65,7 +65,6 @@ install:
   - sudo apt-get install -y --allow-unauthenticated xpra xserver-xorg-video-dummy freeglut3-dev mesa-utils
 
   # mujoco deps
-  - sudo apt-get install libglfw3 libglew2.0
   - sudo apt-get install -y --allow-unauthenticated libglfw2 libglew-dev libosmesa6-dev patchelf libopenmpi-dev openmpi-bin
 
   # for dm_control (because 14.04 uses an ancient glibc)
@@ -124,7 +123,7 @@ script:
   - scripts/travisci/check_flake8.sh
   - scripts/travisci/check_imports.sh
   - scripts/travisci/check_precommit.sh
-  - nose2 -c setup.cfg -E 'not broken and not huge'
+  - nose2 -c setup.cfg -E 'not huge and not broken'
 
 after_script:
   - xpra stop "${DISPLAY}"
