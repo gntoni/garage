@@ -77,7 +77,7 @@ class ReacherEnv(MujocoEnv, Serializable):
             assert action.shape == (3, )
             action = action.copy()
             action *= 0.1  # limit the action
-            rot_ctrl = np.array([1., 0., 1., 0.])
+            rot_ctrl = np.array([0., 1., 1., 0.])
             action = np.concatenate([action, rot_ctrl])
             mocap_set_action(self.sim,
                              action)  # For pos control of the end effector
@@ -96,7 +96,7 @@ class ReacherEnv(MujocoEnv, Serializable):
 
     def _reset_target_visualization(self):
         site_id = self.sim.model.site_name2id('target_pos')
-        self.sim.model.site_pos[site_id] = self._initial_goal
+        self.sim.model.site_pos[site_id] = self._goal
         self.sim.forward()
 
     @overrides
