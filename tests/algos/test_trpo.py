@@ -2,7 +2,6 @@ import unittest
 
 import gym
 import numpy as np
-import theano.tensor as TT
 
 from garage.algos import TRPO
 from garage.baselines import ZeroBaseline
@@ -30,17 +29,10 @@ class DummyEnv(gym.Env):
             observation=np.zeros(1), reward=np.random.normal(), done=True)
 
 
-def naive_relu(x):
-    return TT.max(x, 0)
-
-
 class TestTRPO(unittest.TestCase):
     def test_trpo_relu_nan(self):
         env = TheanoEnv(DummyEnv())
-        policy = GaussianMLPPolicy(
-            env_spec=env.spec,
-            hidden_nonlinearity=naive_relu,
-            hidden_sizes=(1, ))
+        policy = GaussianMLPPolicy(env_spec=env.spec, hidden_sizes=(1, ))
         baseline = ZeroBaseline(env_spec=env.spec)
         algo = TRPO(
             env=env,
@@ -52,8 +44,6 @@ class TestTRPO(unittest.TestCase):
             step_size=0.001)
         algo.train()
         assert not np.isnan(np.sum(policy.get_param_values()))
-
-    test_trpo_relu_nan.broken = True
 
     def test_trpo_deterministic_nan(self):
         env = TheanoEnv(DummyEnv())
@@ -70,5 +60,3 @@ class TestTRPO(unittest.TestCase):
             step_size=0.01)
         algo.train()
         assert not np.isnan(np.sum(policy.get_param_values()))
-
-    test_trpo_deterministic_nan.broken = True

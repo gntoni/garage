@@ -123,7 +123,7 @@ script:
   - scripts/travisci/check_flake8.sh
   - scripts/travisci/check_imports.sh
   - scripts/travisci/check_precommit.sh
-  - nose2 -c setup.cfg -E 'not huge and not broken'
+  - nose2 -c setup.cfg -E 'not huge'
 
 after_script:
   - xpra stop "${DISPLAY}"
