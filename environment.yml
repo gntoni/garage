@@ -45,7 +45,7 @@ dependencies:
         - jsonmerge
         - protobuf
         - memory_profiler
-        - sh
+        - GitPython
         # dev dependencies below this line
         - nose2
         - flake8
