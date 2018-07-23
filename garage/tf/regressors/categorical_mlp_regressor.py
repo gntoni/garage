@@ -51,7 +51,7 @@ class CategoricalMLPRegressor(LayersPowered, Serializable):
 
         with tf.variable_scope(name, "CategoricalMLPRegressor"):
             if optimizer is None:
-                optimizer = LbfgsOptimizer(name="optimizer")
+                optimizer = LbfgsOptimizer()
             if tr_optimizer is None:
                 tr_optimizer = ConjugateGradientOptimizer()
 

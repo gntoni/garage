@@ -57,6 +57,10 @@ class PenaltyLbfgsOptimizer(Serializable):
         :param inputs: A list of symbolic variables as inputs
         :return: No return value.
         """
+        constraint_term, constraint_value = leq_constraint
+        penalty_var = tf.placeholder(tf.float32, tuple(), name="penalty")
+        penalized_loss = loss + penalty_var * constraint_term
+
         self._target = target
         self._max_constraint_val = constraint_value
         self._constraint_name = constraint_name
